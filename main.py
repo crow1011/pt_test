@@ -1,11 +1,10 @@
 from ipaddress import ip_address, ip_network
+import argparse
+
+debug = False
 
 
-allow_list_path = 'data/allow.list'
-deny_list_path = 'data/deny.list'
-only_24 = True
 
-# ValueError
 def get_net_list(fname):
 	res = []
 	with open(fname, 'r') as f:
@@ -48,8 +47,7 @@ def filter(allow_list_path, deny_list_path, report_path='report.list'):
 			res.append(anet)
 
 	for rnet in res:
-		if only_24:
-			print('now', rnet, rnet.prefixlen)
+		if only_24_32:
 			if rnet.prefixlen==24:
 				yield rnet
 			elif rnet.prefixlen==32:
@@ -65,9 +63,29 @@ def filter(allow_list_path, deny_list_path, report_path='report.list'):
 		else:
 			yield rnet
 
+def main(allow_list_path, deny_list_path, only_24_32, report_path):
+	gres = filter(allow_list_path, deny_list_path, only_24_32)
+	save_results(gres, report_path)
 
 
 
 if __name__ == '__main__':
-	res = filter(allow_list_path=allow_list_path, deny_list_path=deny_list_path)
-	save_results(res, 'report.list')
+	if debug:
+		allow_list_path = 'data/allow.list'
+		deny_list_path = 'data/deny.list'
+		report_path = 'report.list'
+		only_24_32 = False
+		main(allow_list_path, deny_list_path, only_24_32, report_path)
+	else:
+		parser = argparse.ArgumentParser(description='Exclude deny networks in allow networks.')
+		parser.add_argument('allow_list', type=str, help='Set path to allow networks list')
+		parser.add_argument('deny_list', type=str, help='Set name for search in data')
+		parser.add_argument('-p', action='store_true', help='Only 24 or 32 network mask. Default: False', default=False)
+		parser.add_argument('-o', type=str, help='Path to save report. Default: report.list', default='report.list')
+		args = parser.parse_args()
+		allow_list_path = args.allow_list
+		deny_list_path = args.deny_list
+		report_path = args.o
+		only_24_32 = args.p
+		print(args)
+		main(allow_list_path, deny_list_path, only_24_32, report_path)
