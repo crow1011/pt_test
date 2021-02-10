@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from ipaddress import ip_address, ip_network
 import argparse
 
@@ -27,9 +28,7 @@ def save_results(res, report_path):
 			f.write(str(net) + '\n')
 
 
-def filter(allow_list_path, deny_list_path, report_path='report.list'):
-	n_allow = get_net_list(allow_list_path)
-	n_deny = get_net_list(deny_list_path)
+def net_filter(n_allow, n_deny, only_24_32):
 	res = []
 	for anet in n_allow:
 		# print(anet)
@@ -64,7 +63,9 @@ def filter(allow_list_path, deny_list_path, report_path='report.list'):
 			yield rnet
 
 def main(allow_list_path, deny_list_path, only_24_32, report_path):
-	gres = filter(allow_list_path, deny_list_path, only_24_32)
+	n_allow = get_net_list(allow_list_path)
+	n_deny = get_net_list(deny_list_path)
+	gres = net_filter(n_allow, n_deny, only_24_32)
 	save_results(gres, report_path)
 
 
@@ -87,5 +88,4 @@ if __name__ == '__main__':
 		deny_list_path = args.deny_list
 		report_path = args.o
 		only_24_32 = args.p
-		print(args)
 		main(allow_list_path, deny_list_path, only_24_32, report_path)
