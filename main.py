@@ -3,7 +3,7 @@ from ipaddress import ip_address, ip_network
 
 allow_list_path = 'data/allow.list'
 deny_list_path = 'data/deny.list'
-
+only_24 = True
 
 # ValueError
 def get_net_list(fname):
@@ -17,16 +17,18 @@ def get_net_list(fname):
 			else:
 				res.append(ip_network(net+'/32'))
 		except ValueError:
-			print('Missing invalid address:', net)
+			print('Missing invalid address(ignore):', net)
 	return res
 
 
 
-def save_results():
-	pass
+def save_results(res, report_path):
+	with open(report_path, 'w') as f:
+		for net in res:
+			f.write(str(net) + '\n')
 
 
-def main(allow_list_path, deny_list_path, report_path='report.list'):
+def filter(allow_list_path, deny_list_path, report_path='report.list'):
 	n_allow = get_net_list(allow_list_path)
 	n_deny = get_net_list(deny_list_path)
 	res = []
@@ -45,10 +47,27 @@ def main(allow_list_path, deny_list_path, report_path='report.list'):
 		if not overlaps_status:
 			res.append(anet)
 
-	return res
+	for rnet in res:
+		if only_24:
+			print('now', rnet, rnet.prefixlen)
+			if rnet.prefixlen==24:
+				yield rnet
+			elif rnet.prefixlen==32:
+				yield rnet
+			elif rnet.prefixlen<24:
+				g_net_list = rnet.subnets(new_prefix=24)
+				for g_net in g_net_list:
+					yield g_net
+			elif rnet.prefixlen>24:
+				g_net_list = rnet.subnets(new_prefix=32)
+				for g_net in g_net_list:
+					yield g_net
+		else:
+			yield rnet
 
 
 
 
 if __name__ == '__main__':
-	print(main(allow_list_path=allow_list_path, deny_list_path=deny_list_path))
+	res = filter(allow_list_path=allow_list_path, deny_list_path=deny_list_path)
+	save_results(res, 'report.list')
