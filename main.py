@@ -46,6 +46,11 @@ def net_filter(n_allow, n_deny, only_24_32):
 				# если пересечение обнаружено меняем статус на False, в res сеть не попадет
 				overlaps_status = True
 				# исключаем пересечение и добавляем результат в конец списка allow, для перепроверки
+
+				# это всё нормально, но мы не можем гарантировать, что в deny.list всё подсети будут меньше,
+				# чем в allow.list
+				# если, например, в deny.list будет 192.168.0.0/16 - то будет, например:
+				# ValueError: 192.168.0.0/16 not contained in 192.168.1.0/24
 				no_overlap = list(anet.address_exclude(dnet))
 				for net in no_overlap:
 					n_allow.append(net)
