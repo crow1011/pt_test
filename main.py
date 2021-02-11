@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from ipaddress import ip_address, ip_network
 import argparse
-
+import random
 # включение и отключение дебага
-debug = False
-
+debug = True
+results = []
 
 def get_net_list(fname):
 	res = []
@@ -29,24 +29,36 @@ def get_net_list(fname):
 def save_one(rnet, report_path, only_24_32):
 	with open(report_path, 'a') as f:
 		if only_24_32:
+			"""
+				поменяй метод разбития по маске на 
+				если 24, то так и сохраняем
+				если больше, то разбиваем на 24
+				если меньше, то по 32? или может не нужно разбивать?
+				24 пользовательский параметр
+			"""
 			# если длина префикса 24 - записываем
 			if rnet.prefixlen==24:
-				f.write(str(rnet) + '\n')
+				# f.write(str(rnet) + '\n')
+				results.append(rnet)
 			# если длина префикса 32 - записываем
 			elif rnet.prefixlen==32:
-				f.write(str(rnet) + '\n')
+				# f.write(str(rnet) + '\n')
+				results.append(rnet)
 			# если длина префикса меньше 24 - делим на части по 24 маске и записываем циклом
 			elif rnet.prefixlen<24:
 				g_net_list = rnet.subnets(new_prefix=24)
 				for g_net in g_net_list:
-					f.write(str(g_net) + '\n')
+					# f.write(str(g_net) + '\n')
+					results.append(g_net)
 			# если длина префикса больше 24 - делим на части по 32 маске и записываем циклом
 			elif rnet.prefixlen>24:
 				g_net_list = rnet.subnets(new_prefix=32)
 				for g_net in g_net_list:
-					f.write(str(g_net) + '\n')
+					# f.write(str(g_net) + '\n')
+					results.append(g_net)
 		else:
-			f.write(str(rnet) + '\n')
+			# f.write(str(rnet) + '\n')
+			results.append(rnet)
 
 
 def rec_filter(anet, n_deny,report_path, only_24_32):
@@ -78,7 +90,29 @@ def main(allow_list_path, deny_list_path, only_24_32, report_path):
 	# запускаем рекурсию по элементам n_allow
 	for anet in n_allow:
 		rec_filter(anet, n_deny, report_path, only_24_32)
-
+	res_blocks = []
+	tst = list(range(len(results)))
+	random.shuffle(tst)
+	block_len = 5
+	last_block_end = 0
+	res_len = len(tst) // block_len
+	res_ost = len(tst) % block_len
+	for i in range(res_len):
+		#print(tst[last_block_end:last_block_end+block_len])
+		res_blocks.append(tst[last_block_end:last_block_end+block_len])
+		last_block_end += block_len
+		if i+1==res_len and res_ost!=0:
+			print('ost')
+			# print(tst[last_block_end:last_block_end+res_ost])
+			res_blocks.append(tst[last_block_end:last_block_end+res_ost])
+			# сюда можно поставить генератор и пинать его когда воркер пришел за таском
+			# возвращать надо подсети 
+			# напиши воркера заглушку чтоб не забить 
+	print(res_ost)
+	print(res_len)
+	print(len(results))
+	#print(results[392])
+	print(res_blocks)
 
 
 if __name__ == '__main__':
@@ -86,8 +120,9 @@ if __name__ == '__main__':
 		allow_list_path = 'data/allow.list'
 		deny_list_path = 'data/deny.list'
 		report_path = 'report.list'
-		only_24_32 = False
+		only_24_32 = True
 		main(allow_list_path, deny_list_path, only_24_32, report_path)
+		print('Done')  
 	else:
 		# парсим параметры
 		parser = argparse.ArgumentParser(description='Exclude deny networks in allow networks.')
