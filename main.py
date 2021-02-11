@@ -42,7 +42,9 @@ def net_filter(n_allow, n_deny, only_24_32):
 		overlaps_status = False
 		for dnet in n_deny:
 			# проверяем пересечение со всеми сетями из deny
-			if anet.overlaps(dnet):
+			if dnet.supernet_of(anet):
+				overlaps_status = True
+			elif anet.overlaps(dnet):
 				# если пересечение обнаружено меняем статус на False, в res сеть не попадет
 				overlaps_status = True
 				# исключаем пересечение и добавляем результат в конец списка allow, для перепроверки

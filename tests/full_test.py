@@ -31,8 +31,8 @@ class TestFull(unittest.TestCase, ColorPrint):
         self.report_path = 'report.list'
         self.only_24_32 = False
         self.n_allow = [IPv4Network('1.0.0.0/8'), IPv4Network('192.168.1.0/24'), IPv4Network('192.168.2.0/24'), IPv4Network('192.168.3.0/24'), IPv4Network('192.168.4.0/24')]
-        self.n_deny = [IPv4Network('192.168.2.0/24'), IPv4Network('192.168.3.0/25')]
-        self.gres_without_p = [IPv4Network('1.0.0.0/8'), IPv4Network('192.168.1.0/24'), IPv4Network('192.168.4.0/24'), IPv4Network('192.168.3.128/25')]
+        self.n_deny = [IPv4Network('192.168.2.0/24'), IPv4Network('192.168.3.0/25'), IPv4Network('192.168.0.0/16')]
+        self.gres_without_p = [IPv4Network('1.0.0.0/8')]
         self.data_with_p = IPv4Network('10.10.0.0/23')
         self.gres_with_p = [IPv4Network('10.10.0.0/24'), IPv4Network('10.10.1.0/24')]
 
