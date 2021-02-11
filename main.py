@@ -3,8 +3,7 @@ from ipaddress import ip_address, ip_network
 import argparse
 
 # включение и отключение дебага
-debug = False
-
+debug = True
 
 
 def get_net_list(fname):
@@ -27,64 +26,58 @@ def get_net_list(fname):
 
 
 
-def save_results(res, report_path):
-	with open(report_path, 'w') as f:
-		for net in res:
-			# пишет построчно из генератора
-			f.write(str(net) + '\n')
-
-
-def net_filter(n_allow, n_deny, only_24_32):
-	# подготавливаем список для результатов
-	res = []
-	for anet in n_allow:
-		# задаем статус для сети из allow списка в False, если статус не изменится, она будет добавлена в res
-		overlaps_status = False
-		for dnet in n_deny:
-			# проверяем пересечение со всеми сетями из deny
-			if dnet.supernet_of(anet):
-				overlaps_status = True
-			elif anet.overlaps(dnet):
-				# если пересечение обнаружено меняем статус на False, в res сеть не попадет
-				overlaps_status = True
-				# исключаем пересечение и добавляем результат в конец списка allow, для перепроверки
-				no_overlap = list(anet.address_exclude(dnet))
-				for net in no_overlap:
-					n_allow.append(net)
-		# если подсеть не пересекается ни с одной из deny, добавляем в res
-		if not overlaps_status:
-			res.append(anet)
-
-	for rnet in res:
-		# проверяем статус параметра
+def save_one(rnet, report_path, only_24_32):
+	with open(report_path, 'a') as f:
 		if only_24_32:
-			# если длина префикса 24 - отдаем
+			# если длина префикса 24 - записываем
 			if rnet.prefixlen==24:
-				yield rnet
-			# если длина префикса 32 - отдаем
+				f.write(str(rnet) + '\n')
+			# если длина префикса 32 - записываем
 			elif rnet.prefixlen==32:
-				yield rnet
-			# если длина префикса меньше 24 - делим на части по 24 маске и отдаем циклом
+				f.write(str(rnet) + '\n')
+			# если длина префикса меньше 24 - делим на части по 24 маске и записываем циклом
 			elif rnet.prefixlen<24:
 				g_net_list = rnet.subnets(new_prefix=24)
 				for g_net in g_net_list:
-					yield g_net
-			# если длина префикса больше 24 - делим на части по 32 маске и отдаем циклом
+					f.write(str(gnet) + '\n')
+			# если длина префикса больше 24 - делим на части по 32 маске и записываем циклом
 			elif rnet.prefixlen>24:
 				g_net_list = rnet.subnets(new_prefix=32)
 				for g_net in g_net_list:
-					yield g_net
+					f.write(str(gnet) + '\n')
 		else:
-			yield rnet
+			f.write(str(rnet) + '\n')
+
+
+def rec_filter(anet, n_deny,report_path, only_24_32):
+	overlaps_status = False
+	for dnet in n_deny:
+		# проверяем пересечение со всеми сетями из deny
+		if dnet.supernet_of(anet):
+			overlaps_status = True
+		elif anet.overlaps(dnet):
+			# если пересечение обнаружено меняем статус на False, эта сеть не будет записана
+			overlaps_status = True
+			# исключаем пересечение и запускаем рекурсию по разбитой сети
+			no_overlap = list(anet.address_exclude(dnet))
+			for net in no_overlap:
+				rec_filter(net, n_deny, report_path, only_24_32)
+	# если сеть не имеет пересечений, отправляем на запись
+	if not overlaps_status:
+		save_one(anet, report_path, only_24_32)
+
+
 
 def main(allow_list_path, deny_list_path, only_24_32, report_path):
+	#  очищаем файл с результатами
+	with open(report_path, 'w') as f:
+		pass
 	# получаем списки deny и allow
 	n_allow = get_net_list(allow_list_path)
 	n_deny = get_net_list(deny_list_path)
-	# создаем генератор с отфильтрованными результатами
-	gres = net_filter(n_allow, n_deny, only_24_32)
-	# сохраняем
-	save_results(gres, report_path)
+	# запускаем рекурсию по элементам n_allow
+	for anet in n_allow:
+		rec_filter(anet, n_deny, report_path, only_24_32)
 
 
 
