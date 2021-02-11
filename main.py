@@ -3,7 +3,7 @@ from ipaddress import ip_address, ip_network
 import argparse
 
 # включение и отключение дебага
-debug = True
+debug = False
 
 
 def get_net_list(fname):
@@ -39,12 +39,12 @@ def save_one(rnet, report_path, only_24_32):
 			elif rnet.prefixlen<24:
 				g_net_list = rnet.subnets(new_prefix=24)
 				for g_net in g_net_list:
-					f.write(str(gnet) + '\n')
+					f.write(str(g_net) + '\n')
 			# если длина префикса больше 24 - делим на части по 32 маске и записываем циклом
 			elif rnet.prefixlen>24:
 				g_net_list = rnet.subnets(new_prefix=32)
 				for g_net in g_net_list:
-					f.write(str(gnet) + '\n')
+					f.write(str(g_net) + '\n')
 		else:
 			f.write(str(rnet) + '\n')
 
